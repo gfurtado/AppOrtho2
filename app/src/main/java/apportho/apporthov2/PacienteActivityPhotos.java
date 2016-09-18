@@ -28,7 +28,6 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.jar.Manifest;
 
 public class PacienteActivityPhotos extends AppCompatActivity {
 
@@ -43,12 +42,11 @@ public class PacienteActivityPhotos extends AppCompatActivity {
     private String pacienteId;
     private GridView gridView;
     private GridViewAdapter gridAdapter;
-    private File directFile;
 
     static final int REQUEST_IMAGE_CAPTURE = 1;
 
     String[] perms = {android.Manifest.permission.CAMERA, android.Manifest.permission.READ_EXTERNAL_STORAGE,
-            android.Manifest.permission.WRITE_EXTERNAL_STORAGE };
+            android.Manifest.permission.WRITE_EXTERNAL_STORAGE};
 
     private static final int REQUEST_CODE = 17;
 
@@ -72,7 +70,7 @@ public class PacienteActivityPhotos extends AppCompatActivity {
 
         pacienteId = uri.getLastPathSegment();
 
-        cursor = getContentResolver().query(uri,DBOpenHelper.PACIENTE_ALL_COLUMNS,pacienteFilter, null,null);
+        cursor = getContentResolver().query(uri, DBOpenHelper.PACIENTE_ALL_COLUMNS, pacienteFilter, null, null);
         cursor.moveToFirst();
 
         atualizarCursor();
@@ -91,9 +89,9 @@ public class PacienteActivityPhotos extends AppCompatActivity {
         txtNomePaciente.setText(cursor.getString(cursor.getColumnIndex(DBOpenHelper.PACIENTE_NOME)));
     }
 
-    public void atualizarCursor(){
+    public void atualizarCursor() {
         Uri uriPhoto = FotoPacienteProvider.CONTENT_URI;
-        photosCursor = getContentResolver().query(uriPhoto,DBOpenHelper.FOTO_ALL_COLUMNS,pacientePhotoFilter, null,null);
+        photosCursor = getContentResolver().query(uriPhoto, DBOpenHelper.FOTO_ALL_COLUMNS, pacientePhotoFilter, null, null);
 
         ArrayList<ImageItem> fotos = new ArrayList<ImageItem>();
         //photosCursor.moveToFirst();
@@ -101,7 +99,7 @@ public class PacienteActivityPhotos extends AppCompatActivity {
             do {
                 String id = photosCursor.getString(0);
 
-                Log.d("PacienteActivityPhotos",photosCursor.getString(2));
+                Log.d("PacienteActivityPhotos", photosCursor.getString(2));
                 //Date date = new SimpleDateFormat("dd/MM/yyyy").parse(photosCursor.getString(2));
                 String date = photosCursor.getString(2);
                 byte[] byteArray = photosCursor.getBlob(3);
@@ -110,7 +108,7 @@ public class PacienteActivityPhotos extends AppCompatActivity {
                 options.inScaled = false;
                 options.inPreferQualityOverSpeed = true;
 
-                ImageItem item = new ImageItem(Integer.parseInt(id), BitmapFactory.decodeByteArray(byteArray, 0 ,byteArray.length,options), date);
+                ImageItem item = new ImageItem(Integer.parseInt(id), BitmapFactory.decodeByteArray(byteArray, 0, byteArray.length, options), date);
                 fotos.add(item);
             } while (photosCursor.moveToNext());
         }
@@ -143,31 +141,14 @@ public class PacienteActivityPhotos extends AppCompatActivity {
 
     // Function para habilidar a camera
     public void onClickTakePicture(View view) {
-       /* if(ContextCompat.checkSelfPermission(PacienteActivityPhotos.this, android.Manifest.permission.CAMERA) == -1 &&
-           ContextCompat.checkSelfPermission(PacienteActivityPhotos.this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) == -1 &&
-           ContextCompat.checkSelfPermission(PacienteActivityPhotos.this, android.Manifest.permission.READ_EXTERNAL_STORAGE) == -1 )
-        {
-
-            ActivityCompat.requestPermissions(PacienteActivityPhotos.this,
-                    new String[]{android.Manifest.permission.CAMERA,
-                                 android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                                 android.Manifest.permission.READ_EXTERNAL_STORAGE},
-                    REQUEST_CODE);
-
-        }else {*/
-
-            Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-            directFile = getOutputMediaFile();
-            file = Uri.fromFile(directFile);
-
-            intent.putExtra(MediaStore.EXTRA_OUTPUT, file);
-
-            startActivityForResult(intent, 100);
-        //}
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        file = Uri.fromFile(getOutputMediaFile());
+        startActivityForResult(intent, 100);
     }
 
 
-    private static File getOutputMediaFile(){
+    private File getOutputMediaFile()
+    {
         File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_PICTURES), "AppOrthoPhotos");
 
@@ -181,7 +162,6 @@ public class PacienteActivityPhotos extends AppCompatActivity {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         return new File(mediaStorageDir.getPath() + File.separator +
                 "IMG_" + timeStamp + ".jpg");
-
     }
 
     @Override
@@ -194,40 +174,25 @@ public class PacienteActivityPhotos extends AppCompatActivity {
         if (requestCode == 100) {
 
             if (resultCode == RESULT_OK) {
-               /* if(ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_EXTERNAL_STORAGE) != 0 )
-                {
-                    ActivityCompat.requestPermissions(this,
-                            new String[]{ android.Manifest.permission.READ_EXTERNAL_STORAGE},
-                            REQUEST_CODE);
 
-                }else {*/
-                    //imageView.setImageURI(file);
+                String timeStamp = new SimpleDateFormat("dd/MM/yyyy").format(new Date());
+                ContentValues values = new ContentValues();
 
-                    String dir = Environment.getExternalStoragePublicDirectory(
-                            Environment.DIRECTORY_PICTURES) + File.separator + "AppOrthoPhotos";
+                Bitmap bitmap = data.getExtras().getParcelable("data");
 
-                    String timeStamp = new SimpleDateFormat("dd/MM/yyyy").format(new Date());
-                    ContentValues values = new ContentValues();
+                //Bitmap bitmap = BitmapFactory.decodeFile(data.getData().getPath());
 
-                    dir = dir + File.separator + directFile.getName();
+                ByteArrayOutputStream blob = new ByteArrayOutputStream();
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, blob);
 
-                    Bitmap bitmap = BitmapFactory.decodeFile(dir);
-
-                    directFile.delete();
-
-                    ByteArrayOutputStream blob = new ByteArrayOutputStream();
-                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, blob);
-
-                    values.put(DBOpenHelper.FOTO_CREATEDON, timeStamp.toString());
-                    values.put(DBOpenHelper.FOTO_IMG, blob.toByteArray());
-                    values.put(DBOpenHelper.FOTO_PAC_ID, pacienteId);
-                    Uri pacienteUrl = getContentResolver().insert(FotoPacienteProvider.CONTENT_URI, values);
-                    setResult(RESULT_OK);
-                    atualizarCursor();
-                //}
-                //this.finish();
+                values.put(DBOpenHelper.FOTO_CREATEDON, timeStamp.toString());
+                values.put(DBOpenHelper.FOTO_IMG, blob.toByteArray());
+                values.put(DBOpenHelper.FOTO_PAC_ID, pacienteId);
+                Uri pacienteUrl = getContentResolver().insert(FotoPacienteProvider.CONTENT_URI, values);
+                setResult(RESULT_OK);
+                atualizarCursor();
             }
+
         }
     }
-
 }
